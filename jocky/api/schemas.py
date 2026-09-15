@@ -14,9 +14,10 @@ class RunInvestigationRequest(BaseModel):
 
 
 class InvestigationResponse(BaseModel):
+    id: int                  # database row id — needed to navigate to the detail page
     investigation_name: str
     endpoint_hostname: str
     started_at: str
     finished_at: str
     findings_count: int
-    report_json: dict  # the full report, as a plain dict
+    report_json: dict        # the full report, as a plain dict

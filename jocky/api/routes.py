@@ -47,7 +47,7 @@ def create_investigation(request: RunInvestigationRequest) -> InvestigationRespo
     report = build_report(result, started_at, finished_at)
     report_dict = asdict(report)
 
-    save_investigation(
+    new_id = save_investigation(
         investigation_name=report.investigation_name,
         endpoint_hostname=report.endpoint_hostname,
         started_at=report.started_at,
@@ -57,6 +57,7 @@ def create_investigation(request: RunInvestigationRequest) -> InvestigationRespo
     )
 
     return InvestigationResponse(
+        id=new_id,
         investigation_name=report.investigation_name,
         endpoint_hostname=report.endpoint_hostname,
         started_at=report.started_at,
