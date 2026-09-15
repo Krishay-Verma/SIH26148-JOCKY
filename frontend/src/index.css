@@ -1,0 +1,163 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  background: #f7f7f7;
+  color: #1a1a1a;
+  line-height: 1.5;
+}
+
+.layout { display: flex; min-height: 100vh; }
+
+.nav {
+  width: 200px;
+  background: #fff;
+  border-right: 1px solid #e5e5e5;
+  padding: 24px 0;
+  flex-shrink: 0;
+}
+.nav-brand {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 20px 24px;
+  border-bottom: 1px solid #e5e5e5;
+  color: #1a1a1a;
+}
+.nav-links { padding: 16px 0; }
+.nav-link {
+  display: block;
+  padding: 8px 20px;
+  color: #555;
+  text-decoration: none;
+  font-size: 13px;
+  border-left: 2px solid transparent;
+}
+.nav-link:hover { color: #1a1a1a; background: #f7f7f7; }
+.nav-link.active { color: #1a1a1a; font-weight: 600; border-left-color: #1a1a1a; }
+
+.main { flex: 1; padding: 32px; overflow-y: auto; }
+.page-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.card-value { font-size: 28px; font-weight: 600; }
+
+.stats-row { display: flex; gap: 16px; margin-bottom: 24px; }
+.stats-row .card { flex: 1; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+th {
+  text-align: left;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e5e5;
+}
+td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+.clickable-row { cursor: pointer; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge-success { background: #e8f5e9; color: #2e7d32; }
+.badge-error { background: #fdecea; color: #b00020; }
+.badge-info { background: #f0f0f0; color: #555; }
+.badge-review { background: #fff3e0; color: #a15c00; }
+
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.1s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: #1a1a1a; color: #fff; }
+.btn-primary:hover:not(:disabled) { opacity: 0.85; }
+.btn-secondary { background: #fff; color: #1a1a1a; border: 1px solid #e5e5e5; }
+.btn-secondary:hover:not(:disabled) { background: #f7f7f7; }
+
+.script-editor {
+  width: 100%;
+  font-family: "Cascadia Code", "Fira Code", "Courier New", monospace;
+  font-size: 13px;
+  padding: 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+  resize: vertical;
+  min-height: 200px;
+  line-height: 1.6;
+  color: #1a1a1a;
+  outline: none;
+}
+.script-editor:focus { border-color: #1a1a1a; background: #fff; }
+
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.msg-error {
+  background: #fdecea;
+  border: 1px solid #f5c6cb;
+  color: #b00020;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.msg-info { background: #f0f0f0; color: #555; padding: 10px 16px; border-radius: 6px; font-size: 13px; }
+
+.finding {
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+.finding-rule { font-size: 12px; color: #888; margin-bottom: 4px; }
+.finding-summary { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.finding-reason { font-size: 12px; color: #666; }
