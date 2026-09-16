@@ -1,5 +1,8 @@
 # JOCKY
 
+> **Smart India Hackathon 2026 — Problem Statement SIH26148**
+> *Creation of scripts/functions with a new programming language to commence Computer & Network forensic analysis*
+
 JOCKY is a host investigation and triage system that executes a restricted investigation DSL, collects endpoint evidence, applies deterministic analysis rules, and persists the resulting investigation report.
 
 The system is divided into four execution stages:
@@ -10,6 +13,21 @@ The system is divided into four execution stages:
 4. **Reporting and persistence** — builds a report and stores it in SQLite through the FastAPI service.
 
 The repository contains both the Python backend and a React/Vite investigation dashboard.
+
+---
+
+## Scope & Safety Boundaries
+
+The original problem statement references evasion techniques including process hollowing, reflective DLL injection, BYOVD exploitation, and kernel-level security bypass.
+
+**These features are intentionally excluded from this prototype.**
+
+This prototype implements the legitimate, auditable core of the framework:
+- A real custom DSL with a lexer, parser, IR, and interpreter
+- Explicitly allowlisted forensic collectors (no arbitrary execution)
+- Deterministic analysis rules
+- Centralized investigation management and reporting
+- Cross-platform execution on Windows and Ubuntu via Python + psutil
 
 ---
 
@@ -203,10 +221,10 @@ The lexer tracks source line numbers so errors can identify their approximate lo
 It validates the grammar:
 
 ```text
-investigation "<name>" {
+investigation "<n>" {
     collect <collector>;
     analyze <rule>;
-    report "<name>";
+    report "<n>";
 }
 ```
 
@@ -703,8 +721,8 @@ SQLite is provided by Python's standard library; no separate database server is 
 ### Clone the repository
 
 ```bash
-git clone <repository-url>
-cd SIH26148-jocky
+git clone https://github.com/Krishay-Verma/SIH26148-JOCKY
+cd SIH26148-JOCKY
 ```
 
 ### Backend setup
