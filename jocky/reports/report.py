@@ -1,25 +1,39 @@
 """
-Report: the final structured output of a JOCKY investigation.
+Report dataclass — the structured output of one completed investigation.
 
-This is deliberately a plain dataclass, not a class with save/upload
-methods - per JOCKY's design rules, "save_report() should not silently
-upload data." Building a report and writing it to disk are two
-separate, explicit steps (see builder.py and json_writer.py/html_writer.py).
+script_hash: SHA-256 of the JOCKY script source that produced this report.
+             Provides a tamper-evident link between the script and its output.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from typing import Optional
 
-from jocky.language.interpreter import InvestigationResult
+
+@dataclass
+class CollectorResult:
+    target: str
+    status: str        # "success" or "error"
+    data: Optional[dict]  = None
+    error: Optional[str]  = None
+
+
+@dataclass
+class Finding:
+    rule_name: str
+    severity: str
+    summary: str
+    reason: str
+    related_evidence: dict = field(default_factory=dict)
 
 
 @dataclass
 class Report:
     investigation_name: str
     endpoint_hostname: str
-    started_at: str  # ISO timestamp
-    finished_at: str  # ISO timestamp
-    collector_results: list  # list of CollectorResult (from interpreter.py)
-    findings: list             # list of Finding (from analysis/finding.py)
-    report_name: str | None = None
-    collector_errors: list = field(default_factory=list)  # collectors that failed
+    started_at: str
+    finished_at: str
+    collector_results: list
+    findings: list
+    collector_errors: list
+    report_name: Optional[str]  = None
+    script_hash: Optional[str]  = None   # SHA-256 of the source script

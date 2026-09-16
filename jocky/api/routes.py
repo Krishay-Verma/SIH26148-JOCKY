@@ -8,11 +8,15 @@ translates between HTTP requests/responses and the functions we
 already built.
 """
 
+import hashlib
 from dataclasses import asdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
+
+from fastapi.responses import HTMLResponse, Response
+from jocky.reports.encryptor import encrypt_report
 
 from jocky.language.lexer import tokenize, LexError
 from jocky.language.parser import parse, ParseError
@@ -40,7 +44,7 @@ def create_investigation(request: RunInvestigationRequest) -> InvestigationRespo
         raise HTTPException(status_code=400, detail=f"Lexer error: {exc}")
     except ParseError as exc:
         raise HTTPException(status_code=400, detail=f"Parser error: {exc}")
-
+    script_hash = hashlib.sha256(request.script.encode()).hexdigest()
     started_at = datetime.now(timezone.utc)
     try:
         result = run_investigation(investigation)
@@ -48,7 +52,7 @@ def create_investigation(request: RunInvestigationRequest) -> InvestigationRespo
         raise HTTPException(status_code=400, detail=f"Interpreter error: {exc}")
     finished_at = datetime.now(timezone.utc)
 
-    report = build_report(result, started_at, finished_at)
+    report = build_report(result, started_at, finished_at, script_hash=script_hash)
     report_dict = asdict(report)
 
     new_id = save_investigation(
@@ -101,6 +105,43 @@ def validate_script(request: RunInvestigationRequest) -> dict:
         "collect_count": collect_count,
         "analyze_count": analyze_count,
         "has_report": has_report,
+    }
+
+@router.post("/api/compile")
+def compile_script(request: RunInvestigationRequest) -> dict:
+    """
+    Tokenize and parse a script, then return a human-readable
+    representation of the intermediate representation.
+
+    This demonstrates the separation between source text and the
+    validated internal form that the interpreter actually executes.
+    No collectors are run.
+    """
+    try:
+        tokens = tokenize(request.script)
+        investigation = parse(tokens)
+    except LexError as exc:
+        raise HTTPException(status_code=400, detail=f"Lexer error: {exc}")
+    except ParseError as exc:
+        raise HTTPException(status_code=400, detail=f"Parser error: {exc}")
+
+    commands = []
+    for cmd in investigation.commands:
+        commands.append({
+            "type": type(cmd).__name__,
+            "target": getattr(cmd, "target", None) or getattr(cmd, "name", None),
+        })
+
+    import base64, json
+    ir_bytes = json.dumps(commands).encode()
+    ir_b64   = base64.b64encode(ir_bytes).decode()
+
+    return {
+        "investigation_name": investigation.name,
+        "token_count": len(tokens),
+        "command_count": len(commands),
+        "commands": commands,
+        "ir_base64": ir_b64,
     }
 
 @router.get("/api/investigations")
@@ -165,4 +206,35 @@ def download_html_report(investigation_id: int) -> HTMLResponse:
     return HTMLResponse(
         content=html,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+@router.get("/api/investigations/{investigation_id}/report.encrypted")
+def download_encrypted_report(investigation_id: int) -> Response:
+    """
+    Return the JSON report encrypted with AES-256-GCM.
+
+    The encryption key is embedded in the Content-Disposition filename
+    as a hex string so the investigator can recover it from download
+    metadata. In a production system the key would be stored in a
+    separate secure key store.
+    """
+    record = get_investigation(investigation_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+
+    import json
+    plaintext = json.dumps(record["report_json"], indent=2).encode()
+    ciphertext, key = encrypt_report(plaintext)
+    key_hex = key.hex()
+
+    return Response(
+        content=ciphertext,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="jocky_report_{investigation_id}.enc"'
+            ),
+            "X-Encryption": "AES-256-GCM",
+            "X-Decryption-Key": key_hex,
+        },
     )

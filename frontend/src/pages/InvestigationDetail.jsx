@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api } from "../api/client";
 
-// ─── Small helper components ────────────────────────────────────────────────
-
 function SeverityBadge({ severity }) {
   if (severity === "review_recommended") return <span className="badge badge-amber">Review Recommended</span>;
   return <span className="badge badge-gray">Informational</span>;
@@ -12,8 +10,6 @@ function SeverityBadge({ severity }) {
 function StatusBadge({ status }) {
   return <span className={`badge ${status === "success" ? "badge-green" : "badge-red"}`}>{status}</span>;
 }
-
-// ─── Per-collector evidence tables ──────────────────────────────────────────
 
 function SystemInfoEvidence({ data }) {
   const rows = [
@@ -165,8 +161,6 @@ const EVIDENCE_COMPONENTS = {
   file_hash:           FileHashEvidence,
 };
 
-// ─── Main page ───────────────────────────────────────────────────────────────
-
 export default function InvestigationDetail() {
   const { id } = useParams();
   const [record,  setRecord]  = useState(null);
@@ -206,31 +200,44 @@ export default function InvestigationDetail() {
           className="plain-link"
           style={{ fontSize: 12, color: "var(--text-muted)" }}
         >
-          ← All Investigations
+          All Investigations
         </Link>
       </div>
 
       <h1 className="page-title">{report.investigation_name}</h1>
 
-            {/* Metadata */}
+      {/* Metadata */}
       <div className="card meta-grid" style={{ marginBottom: 16 }}>
         <div className="meta-item"><label>Endpoint</label><span>{report.endpoint_hostname}</span></div>
         <div className="meta-item"><label>Findings</label><span>{report.findings.length}</span></div>
         <div className="meta-item"><label>Started</label><span>{new Date(report.started_at).toLocaleString()}</span></div>
         <div className="meta-item"><label>Finished</label><span>{new Date(report.finished_at).toLocaleString()}</span></div>
+        <div className="meta-item" style={{ gridColumn: "1 / -1" }}>
+          <label>Script SHA-256</label>
+          <span style={{ fontFamily: "monospace", fontSize: 12, wordBreak: "break-all" }}>
+            {report.script_hash ?? "—"}
+          </span>
+        </div>
       </div>
 
       {/* Download buttons */}
       <div className="actions" style={{ marginBottom: 28 }}>
         <button className="btn btn-ghost" onClick={downloadJSON}>
-          ↓ Download JSON
+          Download JSON
         </button>
         <a
           className="btn btn-ghost"
           href={`http://localhost:8000/api/investigations/${id}/report.html`}
           download={`jocky_report_${id}.html`}
         >
-          ↓ Download HTML
+          Download HTML
+        </a>
+        <a
+          className="btn btn-ghost"
+          href={`http://localhost:8000/api/investigations/${id}/report.encrypted`}
+          download={`jocky_report_${id}.enc`}
+        >
+          Download Encrypted
         </a>
       </div>
 
