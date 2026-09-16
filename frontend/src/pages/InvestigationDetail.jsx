@@ -17,12 +17,14 @@ function StatusBadge({ status }) {
 
 function SystemInfoEvidence({ data }) {
   const rows = [
-    ["Hostname", data.hostname],
-    ["OS", data.os],
-    ["OS Version", data.os_version],
+    ["Hostname",     data.hostname],
+    ["OS",           data.os],
+    ["OS Version",   data.os_version],
     ["Architecture", data.architecture],
-    ["CPU Count", data.cpu_count],
-    ["Total Memory", data.total_memory_bytes ? `${(data.total_memory_bytes / 1073741824).toFixed(2)} GB` : "—"],
+    ["CPU Count",    data.cpu_count],
+    ["Total Memory", data.total_memory_bytes
+      ? `${(data.total_memory_bytes / 1073741824).toFixed(2)} GB`
+      : "—"],
     ["Current User", data.current_user],
     ["Collected At", data.collected_at],
   ];
@@ -54,13 +56,17 @@ function ProcessesEvidence({ data }) {
               <td>{p.pid}</td>
               <td>{p.name}</td>
               <td style={{ color: "var(--text-muted)" }}>{p.username ?? "—"}</td>
-              <td style={{ color: "var(--text-muted)", fontFamily: "monospace", fontSize: 12 }}>{p.exe_path ?? "—"}</td>
+              <td style={{ color: "var(--text-muted)", fontFamily: "monospace", fontSize: 12 }}>
+                {p.exe_path ?? "—"}
+              </td>
             </tr>
           ))}
           {procs.length > 60 && (
-            <tr><td colSpan={4} style={{ color: "var(--text-muted)", textAlign: "center" }}>
-              +{procs.length - 60} more (showing first 60)
-            </td></tr>
+            <tr>
+              <td colSpan={4} style={{ color: "var(--text-muted)", textAlign: "center" }}>
+                +{procs.length - 60} more (showing first 60)
+              </td>
+            </tr>
           )}
         </tbody>
       </table>
@@ -152,20 +158,20 @@ function FileHashEvidence({ data }) {
 }
 
 const EVIDENCE_COMPONENTS = {
-  system_info: SystemInfoEvidence,
-  processes: ProcessesEvidence,
+  system_info:         SystemInfoEvidence,
+  processes:           ProcessesEvidence,
   network_connections: NetworkEvidence,
-  logged_in_users: LoggedInUsersEvidence,
-  file_hash: FileHashEvidence,
+  logged_in_users:     LoggedInUsersEvidence,
+  file_hash:           FileHashEvidence,
 };
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function InvestigationDetail() {
   const { id } = useParams();
-  const [record, setRecord] = useState(null);
+  const [record,  setRecord]  = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error,   setError]   = useState(null);
 
   useEffect(() => {
     api.getInvestigation(id)
@@ -173,6 +179,19 @@ export default function InvestigationDetail() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [id]);
+
+  function downloadJSON() {
+    const blob = new Blob(
+      [JSON.stringify(record.report_json, null, 2)],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement("a");
+    a.href     = url;
+    a.download = `jocky_report_${id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (loading) return <div className="loading">Loading…</div>;
   if (error)   return <div className="msg msg-error">{error}</div>;
@@ -182,26 +201,46 @@ export default function InvestigationDetail() {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <Link to="/investigations" className="plain-link" style={{ fontSize: 12, color: "var(--text-muted)" }}>
+        <Link
+          to="/investigations"
+          className="plain-link"
+          style={{ fontSize: 12, color: "var(--text-muted)" }}
+        >
           ← All Investigations
         </Link>
       </div>
 
       <h1 className="page-title">{report.investigation_name}</h1>
 
-      {/* Metadata */}
-      <div className="card meta-grid" style={{ marginBottom: 28 }}>
+            {/* Metadata */}
+      <div className="card meta-grid" style={{ marginBottom: 16 }}>
         <div className="meta-item"><label>Endpoint</label><span>{report.endpoint_hostname}</span></div>
         <div className="meta-item"><label>Findings</label><span>{report.findings.length}</span></div>
         <div className="meta-item"><label>Started</label><span>{new Date(report.started_at).toLocaleString()}</span></div>
         <div className="meta-item"><label>Finished</label><span>{new Date(report.finished_at).toLocaleString()}</span></div>
       </div>
 
+      {/* Download buttons */}
+      <div className="actions" style={{ marginBottom: 28 }}>
+        <button className="btn btn-ghost" onClick={downloadJSON}>
+          ↓ Download JSON
+        </button>
+        <a
+          className="btn btn-ghost"
+          href={`http://localhost:8000/api/investigations/${id}/report.html`}
+          download={`jocky_report_${id}.html`}
+        >
+          ↓ Download HTML
+        </a>
+      </div>
+
       {/* Collector status */}
       <div className="section-title">Collectors</div>
       <div className="table-wrap" style={{ marginBottom: 28 }}>
         <table>
-          <thead><tr><th>Collector</th><th>Status</th><th>Detail</th></tr></thead>
+          <thead>
+            <tr><th>Collector</th><th>Status</th><th>Detail</th></tr>
+          </thead>
           <tbody>
             {report.collector_results.length === 0
               ? <tr><td colSpan={3} style={{ textAlign: "center", color: "var(--text-muted)" }}>No collectors ran</td></tr>
@@ -218,11 +257,14 @@ export default function InvestigationDetail() {
 
       {/* Findings */}
       <div className="section-title">
-        Findings <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({report.findings.length})</span>
+        Findings{" "}
+        <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>({report.findings.length})</span>
       </div>
       <div className="table-wrap" style={{ marginBottom: 28 }}>
         <table>
-          <thead><tr><th>Rule</th><th>Severity</th><th>Summary</th><th>Reason</th></tr></thead>
+          <thead>
+            <tr><th>Rule</th><th>Severity</th><th>Summary</th><th>Reason</th></tr>
+          </thead>
           <tbody>
             {report.findings.length === 0
               ? <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--text-muted)" }}>No findings</td></tr>

@@ -12,14 +12,18 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import HTMLResponse
 
 from jocky.language.lexer import tokenize, LexError
 from jocky.language.parser import parse, ParseError
-from jocky.language.interpreter import run_investigation, InterpreterError
+from jocky.language.interpreter import run_investigation, InterpreterError, CollectorResult
+from jocky.language.ir import CollectCommand, AnalyzeCommand, ReportCommand
 from jocky.reports.builder import build_report
+from jocky.reports.html_writer import build_html_string
+from jocky.reports.report import Report
+from jocky.analysis.finding import Finding
 from jocky.api.schemas import RunInvestigationRequest, InvestigationResponse
 from jocky.storage.database import save_investigation, list_investigations, get_investigation
-
 router = APIRouter()
 
 
@@ -66,6 +70,38 @@ def create_investigation(request: RunInvestigationRequest) -> InvestigationRespo
         report_json=report_dict,
     )
 
+@router.post("/api/validate")
+def validate_script(request: RunInvestigationRequest) -> dict:
+    """
+    Validate a JOCKY script without executing it.
+
+    Runs the lexer and parser only. No collectors are called,
+    no data is collected, nothing is written to the database.
+    Returns a summary of what the script contains if valid,
+    or a descriptive error if it is not.
+    """
+    try:
+        tokens = tokenize(request.script)
+        investigation = parse(tokens)
+    except LexError as exc:
+        raise HTTPException(status_code=400, detail=f"Lexer error: {exc}")
+    except ParseError as exc:
+        raise HTTPException(status_code=400, detail=f"Parser error: {exc}")
+
+    from jocky.language.ir import CollectCommand, AnalyzeCommand, ReportCommand
+
+    collect_count = sum(1 for c in investigation.commands if isinstance(c, CollectCommand))
+    analyze_count = sum(1 for c in investigation.commands if isinstance(c, AnalyzeCommand))
+    has_report   = any(isinstance(c, ReportCommand) for c in investigation.commands)
+
+    return {
+        "valid": True,
+        "investigation_name": investigation.name,
+        "total_commands": len(investigation.commands),
+        "collect_count": collect_count,
+        "analyze_count": analyze_count,
+        "has_report": has_report,
+    }
 
 @router.get("/api/investigations")
 def get_investigations() -> list[dict]:
@@ -80,3 +116,53 @@ def get_investigation_by_id(investigation_id: int) -> dict:
     if record is None:
         raise HTTPException(status_code=404, detail="Investigation not found")
     return record
+
+@router.get("/api/investigations/{investigation_id}/report.html")
+def download_html_report(investigation_id: int) -> HTMLResponse:
+    """
+    Reconstruct the Report object from the stored JSON and return it
+    as a downloadable HTML file. No re-collection happens here — we
+    use exactly the evidence that was captured when the investigation ran.
+    """
+    record = get_investigation(investigation_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+
+    rj = record["report_json"]
+
+    # Rebuild the Report dataclass from stored JSON so html_writer can use it.
+    report = Report(
+        investigation_name=rj["investigation_name"],
+        endpoint_hostname=rj["endpoint_hostname"],
+        started_at=rj["started_at"],
+        finished_at=rj["finished_at"],
+        report_name=rj.get("report_name"),
+        collector_results=[
+            CollectorResult(
+                target=cr["target"],
+                status=cr["status"],
+                data=cr.get("data"),
+                error=cr.get("error"),
+            )
+            for cr in rj.get("collector_results", [])
+        ],
+        findings=[
+            Finding(
+                rule_name=f["rule_name"],
+                severity=f["severity"],
+                summary=f["summary"],
+                reason=f["reason"],
+                related_evidence=f.get("related_evidence", {}),
+            )
+            for f in rj.get("findings", [])
+        ],
+        collector_errors=[],
+    )
+
+    html = build_html_string(report)
+
+    filename = f"jocky_report_{investigation_id}.html"
+    return HTMLResponse(
+        content=html,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -17,9 +17,9 @@ async function request(method, path, body = null) {
 }
 
 export const api = {
-  getHealth: () => request("GET", "/api/health"),
-  getInvestigations: () => request("GET", "/api/investigations"),
-  getInvestigation: (id) => request("GET", `/api/investigations/${id}`),
-  runInvestigation: (script) =>
-    request("POST", "/api/investigations", { script }),
+  getHealth:        ()       => request("GET",  "/api/health"),
+  getInvestigations:()       => request("GET",  "/api/investigations"),
+  getInvestigation: (id)     => request("GET",  `/api/investigations/${id}`),
+  runInvestigation: (script) => request("POST", "/api/investigations", { script }),
+  validateScript:   (script) => request("POST", "/api/validate",       { script }),
 };
